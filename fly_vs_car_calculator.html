@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KARDA — Fly vs. Car Travel Calculator</title>
+<style>
+  /* ---------- Design Tokens ---------- */
+  :root {
+    --navy: #001F3F;
+    --navy-soft: #0a2c52;
+    --white: #FFFFFF;
+    --black: #000000;
+    --grey-50: #F7F9FC;
+    --grey-100: #F5F5F5;
+    --grey-200: #E5E8EC;
+    --grey-300: #CCCCCC;
+    --grey-500: #6B7280;
+    --grey-700: #374151;
+    --accent: #0074D9;
+    --accent-soft: #E6F1FB;
+    --green: #2ECC40;
+    --green-soft: #E8F8EA;
+    --red: #FF4136;
+    --red-soft: #FDE6E5;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius: 8px;
+    --radius-sm: 4px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--grey-50);
+    color: var(--grey-700);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 { color: var(--navy); margin: 0; font-weight: 600; }
+  h1 { font-size: 26px; font-weight: 700; }
+  h2 { font-size: 18px; }
+  a { color: var(--accent); text-decoration: none; }
+
+  /* ---------- Top Nav ---------- */
+  .topnav {
+    background: var(--navy);
+    color: var(--white);
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    box-shadow: var(--shadow-md);
+  }
+  .topnav-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 36px; height: 36px;
+    background: var(--white);
+    color: var(--navy);
+    font-weight: 800;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+  .topnav-title { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; }
+  .topnav-title small { display: block; font-size: 11px; opacity: 0.7; font-weight: 400; }
+  .topnav-right { display: flex; align-items: center; gap: 18px; font-size: 13px; }
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* ---------- Layout ---------- */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+  }
+
+  .page-header {
+    margin-bottom: 22px;
+  }
+  .page-header p { margin: 6px 0 0; color: var(--grey-500); font-size: 14px; }
+
+  /* ---------- Calculator Card ---------- */
+  .calc-card {
+    background: var(--white);
+    border: 1px solid var(--grey-200);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+
+  .calc-body {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: 520px;
+  }
+  @media (max-width: 820px) { .calc-body { grid-template-columns: 1fr; } }
+
+  .calc-inputs {
+    background: var(--grey-50);
+    padding: 24px;
+    border-right: 1px solid var(--grey-200);
+  }
+  .calc-results { padding: 24px; }
+
+  /* ---------- Form ---------- */
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .form-group input, .form-group textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--grey-300);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--white);
+    transition: border-color .12s, box-shadow .12s;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .form-tip { font-size: 11px; color: var(--grey-500); margin-top: 3px; }
+
+  .maps-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 5px 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background .15s, color .15s;
+  }
+  .maps-link:hover { background: var(--accent); color: var(--white); }
+  .maps-link.disabled { background: var(--grey-100); color: var(--grey-500); pointer-events: none; cursor: not-allowed; }
+  .maps-link svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .assumptions-box {
+    background: var(--accent-soft);
+    border: 1px dashed var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    color: var(--navy);
+  }
+  .assumptions-box .ab-title {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 700;
+  }
+  .assumptions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .assumptions-grid label { display: block; font-size: 10px; color: var(--grey-500); margin-bottom: 2px; font-weight: 600; }
+  .assumptions-grid input {
+    padding: 5px 7px;
+    font-size: 12px;
+    border: 1px solid var(--grey-300);
+    border-radius: 3px;
+    width: 100%;
+    background: var(--white);
+    font-family: inherit;
+  }
+
+  /* ---------- Scenarios ---------- */
+  .scenario {
+    border: 1px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+  .scenario h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .scenario-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--grey-200);
+  }
+  .scenario-line:last-of-type { border-bottom: none; }
+  .scenario-line .lbl { color: var(--grey-700); }
+  .scenario-line .val { font-weight: 500; color: var(--navy); }
+  .scenario-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px solid var(--navy);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  .verdict {
+    background: var(--navy);
+    color: var(--white);
+    padding: 18px;
+    border-radius: var(--radius);
+    text-align: center;
+    margin-top: 14px;
+  }
+  .verdict-headline { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .verdict-savings { font-size: 30px; font-weight: 800; color: var(--green); }
+  .verdict-savings.fly-wins { color: #ffb74d; }
+  .verdict-detail { font-size: 12px; opacity: 0.85; margin-top: 6px; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s, transform .05s;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn-secondary { background: var(--white); color: var(--navy); border: 1px solid var(--grey-300); }
+  .btn-secondary:hover { background: var(--grey-100); color: var(--navy); }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+  .actions-row {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .footer-note {
+    margin-top: 22px;
+    font-size: 11px;
+    color: var(--grey-500);
+    text-align: center;
+  }
+
+  @media print {
+    .topnav, .actions-row, .maps-link { display: none; }
+    body { background: white; }
+    .calc-card { box-shadow: none; border: 1px solid #000; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== TOP NAV ====== -->
+<header class="topnav">
+  <div class="topnav-left">
+    <div class="logo">K</div>
+    <div class="topnav-title">
+      KARDA
+      <small>Fly vs. Car Travel Calculator</small>
+    </div>
+  </div>
+  <div class="topnav-right">
+    <span id="datetime"></span>
+    <div class="avatar" title="Lana Magill">LM</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="page-header">
+    <h1>Fly vs. Car Travel Calculator</h1>
+    <p>Compare the all-in cost of flying versus driving to a destination. Adjust any input and totals update instantly.</p>
+  </div>
+
+  <div class="calc-card">
+    <div class="calc-body">
+
+      <!-- ============ INPUTS ============ -->
+      <div class="calc-inputs">
+        <div class="assumptions-box">
+          <span class="ab-title">Car Assumptions</span>
+          <div class="assumptions-grid">
+            <div>
+              <label>Gas $/gal</label>
+              <input type="number" id="a-gas" value="3.00" step="0.10" />
+            </div>
+            <div>
+              <label>MPG</label>
+              <input type="number" id="a-mpg" value="20" step="1" />
+            </div>
+            <div>
+              <label>Tank gal</label>
+              <input type="number" id="a-tank" value="18" step="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Starting Location</label>
+          <input type="text" id="i-origin" value="Tampa, FL" placeholder="City, State or ZIP" />
+        </div>
+
+        <div class="form-group">
+          <label>Destination</label>
+          <input type="text" id="i-dest" value="" placeholder="City, State" />
+        </div>
+
+        <div class="form-group">
+          <label>Distance (miles, one-way)</label>
+          <input type="number" id="i-miles" value="0" step="10" min="0" />
+          <a id="maps-link" class="maps-link disabled" href="#" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Get directions on Google Maps
+          </a>
+          <div class="form-tip">Round-trip mileage = 2× this value</div>
+        </div>
+
+        <div class="form-group">
+          <label>Attendees</label>
+          <input type="number" id="i-attendees" value="1" min="1" />
+        </div>
+
+        <div class="form-group">
+          <label>Overnight Stays</label>
+          <input type="number" id="i-nights" value="3" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Hotel ($/night)</label>
+          <input type="number" id="i-hotel" value="180" step="10" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Meal Per Diem ($/day/person)</label>
+          <input type="number" id="i-meals" value="60" step="5" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Flight Cost (round-trip, per person)</label>
+          <input type="number" id="i-flight" value="350" step="25" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Rental Car (total)</label>
+          <input type="number" id="i-rental" value="240" step="10" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Airport Parking ($/day)</label>
+          <input type="number" id="i-airport-parking" value="20" step="5" min="0" />
+          <div class="form-tip">Charged per day for the duration of the trip (Fly only)</div>
+        </div>
+
+        <div class="form-group">
+          <label>Lodging Parking ($/night)</label>
+          <input type="number" id="i-lodging-parking" value="0" step="5" min="0" />
+          <div class="form-tip">Hotel parking fee while driving (Car only)</div>
+        </div>
+
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="i-notes" rows="2" placeholder="Weather, time constraints, etc."></textarea>
+        </div>
+      </div>
+
+      <!-- ============ RESULTS ============ -->
+      <div class="calc-results">
+        <div class="scenario">
+          <h3>Car Scenario</h3>
+          <div id="drive-detail"></div>
+          <div class="scenario-total">
+            <span>Total Car Cost</span>
+            <span id="drive-total">$0</span>
+          </div>
+        </div>
+
+        <div class="scenario">
+          <h3>Fly Scenario</h3>
+          <div id="fly-detail"></div>
+          <div class="scenario-total">
+            <span>Total Fly Cost</span>
+            <span id="fly-total">$0</span>
+          </div>
+        </div>
+
+        <div class="verdict" id="verdict">
+          <div class="verdict-headline" id="verdict-headline">—</div>
+          <div class="verdict-savings" id="verdict-savings">$0</div>
+          <div class="verdict-detail" id="verdict-detail">Enter trip details to compare</div>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn btn-secondary btn-sm" onclick="window.print()">Save as PDF</button>
+          <button class="btn btn-sm" id="reset-btn">Reset</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="footer-note">KARDA · Fly vs. Car Travel Calculator</p>
+</main>
+
+<script>
+const fmt$ = (n) => '$' + (n||0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmt$2 = (n) => '$' + (n||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function setDateTime() {
+  const d = new Date();
+  const opts = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+  document.getElementById('datetime').textContent = d.toLocaleDateString('en-US', opts);
+}
+
+/* ----- Google Maps directions link ----- */
+function updateMapsLink() {
+  const origin = document.getElementById('i-origin').value.trim();
+  const dest = document.getElementById('i-dest').value.trim();
+  const link = document.getElementById('maps-link');
+  if (origin && dest) {
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+    link.href = url;
+    link.classList.remove('disabled');
+  } else {
+    link.href = '#';
+    link.classList.add('disabled');
+  }
+}
+
+/* ----- Calculation ----- */
+function recalc() {
+  const num = (id) => parseFloat(document.getElementById(id).value) || 0;
+  const gas = num('a-gas'), mpg = num('a-mpg');
+  const miles = num('i-miles');
+  const att = Math.max(1, num('i-attendees'));
+  const nights = num('i-nights');
+  const flight = num('i-flight');
+  const rental = num('i-rental');
+  const hotel = num('i-hotel');
+  const meals = num('i-meals');
+  const airportParkingRate = num('i-airport-parking');
+  const lodgingParkingRate = num('i-lodging-parking');
+
+  const tripDays = nights + 1; // travel days for meals and airport parking
+
+  /* ----- CAR SCENARIO ----- */
+  const roundTripMiles = miles * 2;
+  const gallons = mpg > 0 ? roundTripMiles / mpg : 0;
+  const fuelCost = gallons * gas;
+  const lodgingDrive = nights * hotel;
+  const lodgingParkingCost = nights * lodgingParkingRate;
+  const mealsDrive = tripDays * meals * att;
+  const driveTotal = fuelCost + lodgingDrive + lodgingParkingCost + mealsDrive;
+
+  document.getElementById('drive-detail').innerHTML = `
+    <div class="scenario-line"><span class="lbl">Round-trip distance</span><span class="val">${roundTripMiles.toLocaleString()} mi</span></div>
+    <div class="scenario-line"><span class="lbl">Gallons (${mpg} mpg)</span><span class="val">${gallons.toFixed(1)} gal</span></div>
+    <div class="scenario-line"><span class="lbl">Fuel cost (@ $${gas.toFixed(2)}/gal)</span><span class="val">${fmt$2(fuelCost)}</span></div>
+    <div class="scenario-line"><span class="lbl">Lodging (${nights} × ${fmt$(hotel)})</span><span class="val">${fmt$2(lodgingDrive)}</span></div>
+    <div class="scenario-line"><span class="lbl">Lodging parking (${nights} × ${fmt$(lodgingParkingRate)})</span><span class="val">${fmt$2(lodgingParkingCost)}</span></div>
